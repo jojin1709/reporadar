@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RepoRadar — find the repo, not the noise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="scanlines" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="radar-wrap" aria-hidden="true">
+    <div class="radar-ring r1"></div>
+    <div class="radar-ring r2"></div>
+    <div class="radar-ring r3"></div>
+    <div class="radar-sweep"></div>
+    <div class="radar-blip b1"></div>
+    <div class="radar-blip b2"></div>
+    <div class="radar-blip b3"></div>
+  </div>
+
+  <div class="hero-content">
+    <p class="eyebrow">GITHUB · GITLAB · ONE SIGNAL</p>
+    <h1>Repo<span class="accent">Radar</span></h1>
+    <p class="tagline">Describe what you need. Stop scrolling stars manually.</p>
+
+    <form id="search-form" class="search-form" autocomplete="off">
+      <input
+        type="text"
+        id="query"
+        placeholder="e.g. react admin dashboard template, python ocr library..."
+        aria-label="Search repositories"
+        required
+      />
+      <button type="submit" id="search-btn">
+        <span class="btn-label">SCAN</span>
+      </button>
+    </form>
+
+    <div class="filters">
+      <label class="filter">
+        <span>Source</span>
+        <select id="f-source">
+          <option value="both">GitHub + GitLab</option>
+          <option value="github">GitHub only</option>
+          <option value="gitlab">GitLab only</option>
+        </select>
+      </label>
+
+      <label class="filter">
+        <span>Language</span>
+        <input type="text" id="f-language" placeholder="any" />
+      </label>
+
+      <label class="filter">
+        <span>License</span>
+        <input type="text" id="f-license" placeholder="e.g. mit" />
+      </label>
+
+      <label class="filter">
+        <span>Min ★</span>
+        <input type="number" id="f-minstars" placeholder="0" min="0" />
+      </label>
+
+      <label class="filter">
+        <span>Sort</span>
+        <select id="f-sort">
+          <option value="best">Best match</option>
+          <option value="stars">Most stars</option>
+          <option value="updated">Recently updated</option>
+        </select>
+      </label>
+    </div>
+  </div>
+</header>
+
+<main class="results-area">
+  <div id="status-line" class="status-line"></div>
+  <div id="results" class="results-grid" role="list"></div>
+</main>
+
+<footer class="site-footer">
+  <p>RepoRadar — self-hosted repo discovery. No tracking, no accounts, no noise.</p>
+</footer>
+
+<template id="card-template">
+  <article class="repo-card" role="listitem">
+    <div class="card-top">
+      <span class="source-tag"></span>
+      <span class="score-tag" title="Composite score: stars + recency + forks"></span>
+    </div>
+    <h3 class="repo-name"><a href="#" target="_blank" rel="noopener"></a></h3>
+    <p class="repo-desc"></p>
+    <div class="repo-meta">
+      <span class="meta-item stars">★ <b></b></span>
+      <span class="meta-item forks">⑂ <b></b></span>
+      <span class="meta-item lang"></span>
+      <span class="meta-item license"></span>
+      <span class="meta-item updated"></span>
+    </div>
+    <div class="repo-topics"></div>
+  </article>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
