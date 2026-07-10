@@ -42,6 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initHistory();
   initFiltersCollapse();
   initKeyboardShortcut();
+  
+  const trendingBtn = document.getElementById('trending-btn');
+  if (trendingBtn) {
+    trendingBtn.addEventListener('click', () => {
+      runSearch('', true);
+    });
+  }
+
   loadParamsFromURL();
 });
 
@@ -234,28 +242,35 @@ function initKeyboardShortcut() {
 function loadParamsFromURL() {
   const params = new URLSearchParams(window.location.search);
   const q = params.get('q');
+  const trending = params.get('trending');
+  
+  if (params.get('source')) fSource.value = params.get('source');
+  if (params.get('language')) fLanguage.value = params.get('language');
+  if (params.get('license')) fLicense.value = params.get('license');
+  if (params.get('minStars')) fMinStars.value = params.get('minStars');
+  if (params.get('sort')) fSort.value = params.get('sort');
+  
+  // Automatically expand filters panel if any advanced filters are active
+  if (fLanguage.value || fLicense.value || fMinStars.value || fSort.value !== 'best' || fSource.value !== 'all') {
+    filtersPanel.classList.remove('collapsed');
+    filtersToggleBtn.classList.add('expanded');
+  }
   
   if (q) {
     queryInput.value = q;
-    if (params.get('source')) fSource.value = params.get('source');
-    if (params.get('language')) fLanguage.value = params.get('language');
-    if (params.get('license')) fLicense.value = params.get('license');
-    if (params.get('minStars')) fMinStars.value = params.get('minStars');
-    if (params.get('sort')) fSort.value = params.get('sort');
-    
-    // Automatically expand filters panel if any advanced filters are active
-    if (fLanguage.value || fLicense.value || fMinStars.value || fSort.value !== 'best' || fSource.value !== 'all') {
-      filtersPanel.classList.remove('collapsed');
-      filtersToggleBtn.classList.add('expanded');
-    }
-    
     runSearch(q);
+  } else if (trending === 'true' || !params.has('q')) {
+    runSearch('', true);
   }
 }
 
-function updateURLParams(q) {
+function updateURLParams(q, isTrending = false) {
   const params = new URLSearchParams();
-  params.set('q', q);
+  if (isTrending) {
+    params.set('trending', 'true');
+  } else {
+    params.set('q', q);
+  }
   if (fSource.value !== 'all') params.set('source', fSource.value);
   if (fLanguage.value.trim()) params.set('language', fLanguage.value.trim());
   if (fLicense.value.trim()) params.set('license', fLicense.value.trim());
@@ -373,22 +388,32 @@ function setLoading(isLoading) {
 }
 
 // ---- Search Execution ----
-async function runSearch(q) {
-  if (!q.trim()) return;
+async function runSearch(q, isTrending = false) {
+  if (!q.trim() && !isTrending) return;
   
   setLoading(true);
-  updateURLParams(q);
-  addHistoryQuery(q);
+  updateURLParams(q, isTrending);
 
-  statusEl.textContent = `Scanning all signal channels for "${q}"...`;
+  if (isTrending) {
+    queryInput.value = '';
+    statusEl.textContent = `Scanning all channels for trending repositories...`;
+  } else {
+    addHistoryQuery(q);
+    statusEl.textContent = `Scanning all signal channels for "${q}"...`;
+  }
+  
   statusEl.classList.remove('error');
   resultsEl.innerHTML = '<div class="loading-state">// picking up signal...</div>';
 
   const params = new URLSearchParams({
-    q,
     source: fSource.value,
     sort: fSort.value,
   });
+  if (isTrending) {
+    params.set('trending', 'true');
+  } else {
+    params.set('q', q);
+  }
   if (fLanguage.value.trim()) params.set('language', fLanguage.value.trim());
   if (fLicense.value.trim()) params.set('license', fLicense.value.trim());
   if (fMinStars.value.trim()) params.set('minStars', fMinStars.value.trim());
@@ -428,5 +453,9 @@ async function runSearch(q) {
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   const q = queryInput.value.trim();
-  if (q) runSearch(q);
+  if (q) {
+    runSearch(q);
+  } else {
+    runSearch('', true);
+  }
 });

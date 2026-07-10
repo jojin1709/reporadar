@@ -37,8 +37,12 @@ function setCached(key, data) {
 }
 
 // ---- GitHub search ----
-async function searchGitHub({ q, language, license, perPage }) {
+async function searchGitHub({ q, language, license, perPage, isTrending }) {
   let query = q;
+  if (isTrending) {
+    const date30DaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    query = `created:>${date30DaysAgo}`;
+  }
   if (language) query += ` language:${language}`;
   if (license) query += ` license:${license}`;
 
@@ -91,8 +95,11 @@ async function fetchGitLabLanguage(repoId, headers) {
 }
 
 // ---- GitLab search ----
-async function searchGitLab({ q, perPage }) {
-  const url = `https://gitlab.com/api/v4/projects?search=${encodeURIComponent(q)}&order_by=star_count&sort=desc&per_page=${perPage}`;
+async function searchGitLab({ q, perPage, isTrending }) {
+  let url = `https://gitlab.com/api/v4/projects?search=${encodeURIComponent(q)}&order_by=star_count&sort=desc&per_page=${perPage}`;
+  if (isTrending) {
+    url = `https://gitlab.com/api/v4/projects?order_by=star_count&sort=desc&per_page=${perPage}`;
+  }
 
   const headers = {};
   if (GITLAB_TOKEN) headers['PRIVATE-TOKEN'] = GITLAB_TOKEN;
@@ -132,8 +139,11 @@ async function searchGitLab({ q, perPage }) {
 }
 
 // ---- Codeberg search ----
-async function searchCodeberg({ q, perPage }) {
-  const url = `https://codeberg.org/api/v1/repos/search?q=${encodeURIComponent(q)}&limit=${perPage}`;
+async function searchCodeberg({ q, perPage, isTrending }) {
+  let url = `https://codeberg.org/api/v1/repos/search?q=${encodeURIComponent(q)}&limit=${perPage}`;
+  if (isTrending) {
+    url = `https://codeberg.org/api/v1/repos/search?limit=${perPage}&sort=stars&order=desc`;
+  }
 
   const headers = {
     Accept: 'application/json',
@@ -211,14 +221,14 @@ app.get('/api/search', async (req, res) => {
       sort = 'best', // best | stars | updated
       source = 'all', // all | github | gitlab | codeberg (supports 'both' too)
       perPage = '20',
+      trending = 'false',
     } = req.query;
 
-    if (!q.trim()) {
-      return res.status(400).json({ error: 'Query parameter "q" is required.' });
-    }
+    const isTrending = trending === 'true' || !q.trim();
+    const queryStr = isTrending ? '__trending__' : q;
 
     const perPageNum = Math.min(parseInt(perPage, 10) || 20, 50);
-    const cacheKey = JSON.stringify({ q, language, license, minStars, sort, source, perPageNum });
+    const cacheKey = JSON.stringify({ q: queryStr, language, license, minStars, sort, source, perPageNum, isTrending });
 
     const cached = getCached(cacheKey);
     if (cached) {
@@ -230,7 +240,7 @@ app.get('/api/search', async (req, res) => {
 
     if (source === 'both' || source === 'all' || source === 'github') {
       tasks.push(
-        searchGitHub({ q, language, license, perPage: perPageNum }).catch((err) => {
+        searchGitHub({ q, language, license, perPage: perPageNum, isTrending }).catch((err) => {
           errors.push({ source: 'github', message: err.message });
           return [];
         })
@@ -238,7 +248,7 @@ app.get('/api/search', async (req, res) => {
     }
     if (source === 'both' || source === 'all' || source === 'gitlab') {
       tasks.push(
-        searchGitLab({ q, perPage: perPageNum }).catch((err) => {
+        searchGitLab({ q, perPage: perPageNum, isTrending }).catch((err) => {
           errors.push({ source: 'gitlab', message: err.message });
           return [];
         })
@@ -246,7 +256,7 @@ app.get('/api/search', async (req, res) => {
     }
     if (source === 'both' || source === 'all' || source === 'codeberg') {
       tasks.push(
-        searchCodeberg({ q, perPage: perPageNum }).catch((err) => {
+        searchCodeberg({ q, perPage: perPageNum, isTrending }).catch((err) => {
           errors.push({ source: 'codeberg', message: err.message });
           return [];
         })

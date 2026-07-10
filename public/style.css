@@ -196,6 +196,35 @@ html, body {
   outline-offset: 2px;
 }
 
+.trending-btn {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 0 16px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s, transform 0.05s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.trending-btn:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: var(--bg-panel-hover);
+}
+.trending-btn:active {
+  transform: scale(0.97);
+}
+.trending-btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
