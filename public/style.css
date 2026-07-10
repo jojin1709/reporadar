@@ -384,6 +384,11 @@ html, body {
   z-index: 10;
 }
 
+.site-header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 .theme-switcher {
   display: flex;
   gap: 8px;
