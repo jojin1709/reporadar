@@ -74,6 +74,22 @@ async function searchGitHub({ q, language, license, perPage }) {
   }));
 }
 
+// ---- GitLab language fetch helper ----
+async function fetchGitLabLanguage(repoId, headers) {
+  try {
+    const url = `https://gitlab.com/api/v4/projects/${repoId}/languages`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && Object.keys(data).length > 0) {
+      return Object.keys(data).reduce((a, b) => (data[a] > data[b] ? a : b));
+    }
+  } catch (err) {
+    // Ignore and return null
+  }
+  return null;
+}
+
 // ---- GitLab search ----
 async function searchGitLab({ q, perPage }) {
   const url = `https://gitlab.com/api/v4/projects?search=${encodeURIComponent(q)}&order_by=star_count&sort=desc&per_page=${perPage}`;
@@ -88,19 +104,63 @@ async function searchGitLab({ q, perPage }) {
   }
   const data = await res.json();
 
-  return (data || []).map((repo) => ({
+  const repos = (data || []).map((repo) => ({
     source: 'gitlab',
+    id: repo.id,
     name: repo.path_with_namespace,
     description: repo.description || '',
     url: repo.web_url,
     stars: repo.star_count || 0,
     forks: repo.forks_count || 0,
     openIssues: repo.open_issues_count || 0,
-    language: null, // GitLab's list endpoint doesn't return primary language without an extra call per repo
+    language: null,
     license: (repo.license && repo.license.nickname) || null,
     updatedAt: repo.last_activity_at,
     owner: repo.namespace ? repo.namespace.name : '',
     avatar: repo.avatar_url || '',
+    topics: repo.topics || [],
+  }));
+
+  // Fetch languages in parallel
+  await Promise.all(
+    repos.map(async (repo) => {
+      repo.language = await fetchGitLabLanguage(repo.id, headers);
+    })
+  );
+
+  return repos;
+}
+
+// ---- Codeberg search ----
+async function searchCodeberg({ q, perPage }) {
+  const url = `https://codeberg.org/api/v1/repos/search?q=${encodeURIComponent(q)}&limit=${perPage}`;
+
+  const headers = {
+    Accept: 'application/json',
+    'User-Agent': 'RepoRadar-App',
+  };
+
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Codeberg API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const items = data.data || [];
+
+  return items.map((repo) => ({
+    source: 'codeberg',
+    name: repo.full_name,
+    description: repo.description || '',
+    url: repo.html_url,
+    stars: repo.stars_count || 0,
+    forks: repo.forks_count || 0,
+    openIssues: repo.open_issues_count || 0,
+    language: repo.language || null,
+    license: null,
+    updatedAt: repo.updated_at,
+    owner: repo.owner ? repo.owner.login : '',
+    avatar: repo.owner ? repo.owner.avatar_url : '',
     topics: repo.topics || [],
   }));
 }
@@ -126,7 +186,16 @@ function rankResults(results) {
       const recencyScore = Math.max(0, 1 - days / 365); // 1.0 = updated today, 0 = a year+ stale
 
       const score = starScore * 0.55 + recencyScore * 0.3 + forkScore * 0.15;
-      return { ...r, score: Math.round(score * 1000) / 1000, daysSinceUpdate: Math.round(days) };
+      return {
+        ...r,
+        score: Math.round(score * 1000) / 1000,
+        daysSinceUpdate: Math.round(days),
+        scoreDetails: {
+          starScore: Math.round(starScore * 1000) / 1000,
+          recencyScore: Math.round(recencyScore * 1000) / 1000,
+          forkScore: Math.round(forkScore * 1000) / 1000,
+        },
+      };
     })
     .sort((a, b) => b.score - a.score);
 }
@@ -140,7 +209,7 @@ app.get('/api/search', async (req, res) => {
       license = '',
       minStars = '0',
       sort = 'best', // best | stars | updated
-      source = 'both', // both | github | gitlab
+      source = 'all', // all | github | gitlab | codeberg (supports 'both' too)
       perPage = '20',
     } = req.query;
 
@@ -159,7 +228,7 @@ app.get('/api/search', async (req, res) => {
     const tasks = [];
     const errors = [];
 
-    if (source === 'both' || source === 'github') {
+    if (source === 'both' || source === 'all' || source === 'github') {
       tasks.push(
         searchGitHub({ q, language, license, perPage: perPageNum }).catch((err) => {
           errors.push({ source: 'github', message: err.message });
@@ -167,10 +236,18 @@ app.get('/api/search', async (req, res) => {
         })
       );
     }
-    if (source === 'both' || source === 'gitlab') {
+    if (source === 'both' || source === 'all' || source === 'gitlab') {
       tasks.push(
         searchGitLab({ q, perPage: perPageNum }).catch((err) => {
           errors.push({ source: 'gitlab', message: err.message });
+          return [];
+        })
+      );
+    }
+    if (source === 'both' || source === 'all' || source === 'codeberg') {
+      tasks.push(
+        searchCodeberg({ q, perPage: perPageNum }).catch((err) => {
+          errors.push({ source: 'codeberg', message: err.message });
           return [];
         })
       );
@@ -183,11 +260,11 @@ app.get('/api/search', async (req, res) => {
     const minStarsNum = parseInt(minStars, 10) || 0;
     merged = merged.filter((r) => r.stars >= minStarsNum);
 
-    // GitLab has no server-side language filter in this endpoint; best-effort client filter on topics
+    // Language filter matching primary language or tags/topics
     if (language) {
       merged = merged.filter(
         (r) =>
-          r.source === 'github' ||
+          (r.language && r.language.toLowerCase() === language.toLowerCase()) ||
           (r.topics && r.topics.some((t) => t.toLowerCase() === language.toLowerCase()))
       );
     }

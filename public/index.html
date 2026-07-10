@@ -23,8 +23,20 @@
     <div class="radar-blip b3"></div>
   </div>
 
+  <div class="site-header-actions">
+    <div id="theme-switcher" class="theme-switcher">
+      <button class="theme-btn active" data-theme="amber" title="Amber Theme" aria-label="Amber Theme"></button>
+      <button class="theme-btn" data-theme="green" title="Green Theme" aria-label="Green Theme"></button>
+      <button class="theme-btn" data-theme="cyan" title="Cyan Theme" aria-label="Cyan Theme"></button>
+      <button class="theme-btn" data-theme="purple" title="Purple Theme" aria-label="Purple Theme"></button>
+    </div>
+    <button id="bookmarks-toggle-btn" class="util-btn">
+      ★ BOOKMARKS (<span id="bookmarks-count">0</span>)
+    </button>
+  </div>
+
   <div class="hero-content">
-    <p class="eyebrow">GITHUB · GITLAB · ONE SIGNAL</p>
+    <p class="eyebrow">GITHUB · GITLAB · CODEBERG · RADAR</p>
     <h1>Repo<span class="accent">Radar</span></h1>
     <p class="tagline">Describe what you need. Stop scrolling stars manually.</p>
 
@@ -41,39 +53,51 @@
       </button>
     </form>
 
-    <div class="filters">
-      <label class="filter">
-        <span>Source</span>
-        <select id="f-source">
-          <option value="both">GitHub + GitLab</option>
-          <option value="github">GitHub only</option>
-          <option value="gitlab">GitLab only</option>
-        </select>
-      </label>
+    <div id="history-container" class="history-container hidden">
+      <span class="history-label">RECENT:</span>
+      <div id="history-list" class="history-list"></div>
+    </div>
 
-      <label class="filter">
-        <span>Language</span>
-        <input type="text" id="f-language" placeholder="any" />
-      </label>
+    <button type="button" id="filters-toggle-btn" class="filters-toggle-btn">
+      <span>ADVANCED FILTERS</span> <span class="arrow">▼</span>
+    </button>
 
-      <label class="filter">
-        <span>License</span>
-        <input type="text" id="f-license" placeholder="e.g. mit" />
-      </label>
+    <div id="filters-panel" class="filters-panel collapsed">
+      <div class="filters">
+        <label class="filter">
+          <span>Source</span>
+          <select id="f-source">
+            <option value="all">GitHub + GitLab + Codeberg</option>
+            <option value="github">GitHub only</option>
+            <option value="gitlab">GitLab only</option>
+            <option value="codeberg">Codeberg only</option>
+          </select>
+        </label>
 
-      <label class="filter">
-        <span>Min ★</span>
-        <input type="number" id="f-minstars" placeholder="0" min="0" />
-      </label>
+        <label class="filter">
+          <span>Language</span>
+          <input type="text" id="f-language" placeholder="any" />
+        </label>
 
-      <label class="filter">
-        <span>Sort</span>
-        <select id="f-sort">
-          <option value="best">Best match</option>
-          <option value="stars">Most stars</option>
-          <option value="updated">Recently updated</option>
-        </select>
-      </label>
+        <label class="filter">
+          <span>License</span>
+          <input type="text" id="f-license" placeholder="e.g. mit" />
+        </label>
+
+        <label class="filter">
+          <span>Min ★</span>
+          <input type="number" id="f-minstars" placeholder="0" min="0" />
+        </label>
+
+        <label class="filter">
+          <span>Sort</span>
+          <select id="f-sort">
+            <option value="best">Best match</option>
+            <option value="stars">Most stars</option>
+            <option value="updated">Recently updated</option>
+          </select>
+        </label>
+      </div>
     </div>
   </div>
 </header>
@@ -83,6 +107,20 @@
   <div id="results" class="results-grid" role="list"></div>
 </main>
 
+<div id="bookmarks-drawer" class="bookmarks-drawer">
+  <div class="drawer-header">
+    <h2>SAVED SIGNALS</h2>
+    <button id="bookmarks-close-btn" class="close-btn" aria-label="Close Bookmarks">×</button>
+  </div>
+  <div class="drawer-actions">
+    <button id="bookmarks-export-btn" class="drawer-action-btn">EXPORT MD</button>
+    <button id="bookmarks-clear-btn" class="drawer-action-btn danger">CLEAR ALL</button>
+  </div>
+  <div id="bookmarks-list" class="bookmarks-list">
+    <!-- Loaded dynamically -->
+  </div>
+</div>
+
 <footer class="site-footer">
   <p>RepoRadar — self-hosted repo discovery. No tracking, no accounts, no noise.</p>
 </footer>
@@ -91,7 +129,15 @@
   <article class="repo-card" role="listitem">
     <div class="card-top">
       <span class="source-tag"></span>
-      <span class="score-tag" title="Composite score: stars + recency + forks"></span>
+      <div class="card-top-right">
+        <span class="score-tag tooltip-trigger">
+          score <span class="score-val"></span>
+          <span class="tooltip-content">
+            <!-- Filled dynamically -->
+          </span>
+        </span>
+        <button class="bookmark-btn" title="Add to Bookmarks">★</button>
+      </div>
     </div>
     <h3 class="repo-name"><a href="#" target="_blank" rel="noopener"></a></h3>
     <p class="repo-desc"></p>
@@ -103,6 +149,10 @@
       <span class="meta-item updated"></span>
     </div>
     <div class="repo-topics"></div>
+    <div class="card-actions">
+      <button class="card-action-btn copy-clone-btn">Copy Clone</button>
+      <button class="card-action-btn copy-url-btn">Copy URL</button>
+    </div>
   </article>
 </template>
 
