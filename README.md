@@ -12,27 +12,10 @@ so you stop scrolling GitHub search results manually.
 - 5-minute in-memory cache per query to avoid hammering rate limits
 - Zero accounts, zero tracking, runs entirely on your own machine
 
-## Setup
+## Live Demo
 
-1. Make sure you have **Node.js 18+** installed (check with `node --version`).
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. (Optional but recommended) Copy `.env.example` to `.env` and add a GitHub
-   personal access token to raise the search rate limit:
-   ```bash
-   cp .env.example .env
-   ```
-   Create a token at https://github.com/settings/tokens — no scopes needed for
-   searching public repos, just the classic token with no boxes checked.
-
-4. Start the server:
-   ```bash
-   npm start
-   ```
-
-5. Open **http://localhost:3000** in your browser.
+You can use the search engine directly online:
+👉 **[reporadar-eight.vercel.app](https://reporadar-eight.vercel.app)**
 
 ## How ranking works
 
