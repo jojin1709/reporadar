@@ -59,8 +59,13 @@ reporadar/
 
 ## Ideas for v2
 
-- Semantic search: embed repo descriptions + query, rank by vector similarity
-  instead of keyword matching, for true "find something like X" search
-- Add Bitbucket / Codeberg as additional sources
+- Semantic search: embed repo descriptions + query, rank by vector similarity instead of keyword matching, for true "find something like X" search
+- Add Bitbucket / SourceForge as additional sources
 - Pre-index popular topics on a schedule instead of live-querying every search
 - "Similar repos" suggestions once a user clicks into one result
+
+---
+
+## Author
+
+Developed and maintained by **[Jojin John](https://www.linkedin.com/in/jojin-john-74386b34a/)**

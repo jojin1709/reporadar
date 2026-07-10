@@ -773,6 +773,10 @@ body.theme-purple {
   animation-duration: 1.2s; /* Speed up scanning sweep! */
 }
 
+.site-footer a:hover {
+  text-decoration: underline !important;
+}
+
 @media (max-width: 640px) {
   .search-form { flex-direction: column; }
   .radar-wrap { width: 420px; height: 420px; }
